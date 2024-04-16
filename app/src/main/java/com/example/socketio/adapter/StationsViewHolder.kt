@@ -7,21 +7,23 @@ import android.util.Log
 import android.view.View
 import android.view.Window
 import android.widget.Button
+import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 import com.example.socketio.data.models.Alarms
 import com.example.socketio.data.network.MyApi
 import com.example.socketio.R
 import com.example.socketio.SocketHandler
+import com.example.socketio.data.models.AlarmsProvider
 import com.example.socketio.data.models.Stations
 import com.example.socketio.databinding.ItemStationBinding
 import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.ui.viewmodel.AlarmsViewModel
-import com.example.socketio.ui.viewmodel.StationsViewModel
 import com.google.gson.GsonBuilder
+import okhttp3.internal.wait
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
@@ -29,18 +31,23 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 
-
-class StationsViewHolder(view: View, private val alarmsViewModel: AlarmsViewModel) : RecyclerView.ViewHolder(view) {
+class StationsViewHolder(
+    view: View,
+    private val alarmsViewModel: AlarmsViewModel,
+    private val alarmsList: List<Alarms>
+    /*private val lifecycle: LifecycleOwner*/
+) : RecyclerView.ViewHolder(view) {
 
     val mSocket = SocketHandler.getSocket()
 
     val binding = ItemStationBinding.bind(view)
 
-    private val BASE_URL = "http://10.105.169.33:8000"
-
+    private val BASE_URL = "http://10.105.168.231:8000"
 
 
     fun render(stationModel: Stations) {
+
+        Log.i("AllStations", AlarmsProvider.alarms.toString())
 
         binding.tvIdStation.text = "Machine ID " + stationModel.id.toString()
         binding.tvNameStation.text = stationModel.st_name
@@ -51,23 +58,26 @@ class StationsViewHolder(view: View, private val alarmsViewModel: AlarmsViewMode
         binding.tvUpdatedAtStation.text = stationModel.updated_at.substring(0, 10)
 
 
+       //Here we take the stations id and look into alarms to see the status of the alarm and
+        //make background card color match al_status
+        val red = ContextCompat.getColor(binding.ivStation.context, com.example.socketio.R.color.red)
+        val currentStationAlarms =  alarmsList.find{ it.id_stations!! == stationModel.id}
+        if (currentStationAlarms != null) {
+            if(currentStationAlarms.al_status == 1){
+                binding.card.setCardBackgroundColor(red)
+            }
+        }
+
         Glide.with(binding.ivStation.context)
             .load("http://10.105.173.111:1880/ID" + stationModel.id).into(binding.ivStation)
 
 
         itemView.setOnClickListener {
 
-            val alStatus = checkForStationsStatus(stationModel.id, 1)
-
-            Toast.makeText(
-                binding.ivStation.context,
-                stationModel.st_name,
-                Toast.LENGTH_LONG
-            ).show()
             val stationsSelected = StationsWithAlarmStatus(
                 1,
                 stationModel.id,
-                1,
+                0,
                 "",
                 "",
                 stationModel.id,
@@ -79,93 +89,26 @@ class StationsViewHolder(view: View, private val alarmsViewModel: AlarmsViewMode
                 stationModel.updated_at.substring(0, 10)
             )
 
+            checkForStationsStatus(1, stationModel.id, stationsSelected)
+
+            val alStatus = alarmsViewModel.isStationAlreadyAlarm.value
             Log.i("AlarmStatus", alStatus.toString())
-
-            when (alStatus) {
-                0 -> showAlertWindow(stationsSelected, stationModel)
-                1 -> Toast.makeText(
-                    binding.ivStation.context,
-                    "Stations is currently Alarmed",
-                    Toast.LENGTH_LONG
-                ).show()
-
-                else -> Toast.makeText(
-                    binding.ivStation.context,
-                    "Option not available",
-                    Toast.LENGTH_LONG
-                ).show()
-            }
-
+            Log.i("stationSelected", stationsSelected.toString())
 
         }
 
     }
 
-
-    private fun showAlertWindow(
-        stationsSelected: StationsWithAlarmStatus,
-        stationModel: Stations
-    ) {
-
-        val dialog = Dialog(binding.ivStation.context)
-        dialog.requestWindowFeature(Window.FEATURE_NO_TITLE)
-        dialog.setCancelable(true)
-        dialog.setContentView(R.layout.alert_dialog)
-        dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-
-        val btnCancel = dialog.findViewById<Button>(R.id.btnCancel)
-        val btnContinue = dialog.findViewById<Button>(R.id.btnContinue)
-
-        btnCancel.setOnClickListener {
-            Toast.makeText(btnCancel.context, "Continue", Toast.LENGTH_LONG).show()
-
-            dialog.dismiss()
-        }
-
-        btnContinue.setOnClickListener {
-
-            val gsonPretty = GsonBuilder().setPrettyPrinting().create()
-            mSocket.emit("station_alarm", gsonPretty.toJson(stationsSelected))
-
-            val red = ContextCompat.getColor(binding.card.context, com.example.socketio.R.color.red)
-            binding.card.setCardBackgroundColor(red)
-
-            val newAlarmToRecord = Alarms(
-                1,
-                stationModel.id,
-                1,
-                "2024-03-18T22:34:09.000Z",
-                "2024-03-18T22:34:09.000Z"
-            )
-
-            val api = Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(GsonConverterFactory.create())
-                //.client(client)
-                .build()
-                .create(MyApi::class.java)
-
-            api.createSupportAlarm(newAlarmToRecord).enqueue(object : Callback<Alarms> {
-                override fun onResponse(call: Call<Alarms>, response: Response<Alarms>) {
-                    if (response.isSuccessful) {
-                        Log.i("Retrofi_alarm", response.body().toString())
-                    } else {
-                        Log.i("Retrofi_alarmed", response.message())
-                    }
-                }
-
-                override fun onFailure(call: Call<Alarms>, t: Throwable) {
-                    Log.i("Retrofi_alarmx", t.message.toString())
-                }
-            })
-            dialog.dismiss()
-        }
-        dialog.show()
-    }
 
     //This function is to look if this stations is not currently alarm, if not alarm process can continue.
-    private fun checkForStationsStatus(stationId: Int, stationsStatus: Int): Boolean {
-        alarmsViewModel.getStatusByStationSuspend(stationId, stationsStatus)
+    private fun checkForStationsStatus(
+        stationsStatus: Int,
+        stationId: Int,
+        stationsSelected: StationsWithAlarmStatus
+    ) {
+        Log.d("MyViewModel PrivateFun", "${stationsStatus} - ${stationId}")
+        Log.i("stationSelected PrivateFun", stationsSelected.toString())
+        alarmsViewModel.getStatusByStationSuspend(stationsStatus, stationId, stationsSelected)
         //TO DO
         //Make an observer of the isStationAlreadyAlarm to look if alarms is active or not
         /*var status = 0

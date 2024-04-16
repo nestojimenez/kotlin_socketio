@@ -28,9 +28,12 @@ interface MyApi  {
     @GET("stations")
     suspend fun getAllComments():Response<List<Stations>>
 
-    @GET("support_alarm/{id_stations}/{al_status}")
-    suspend fun getStatusByStationSuspend(@Path("id_stations") id_stations:Int?,
-                           @Path("al_status") al_status:Int?):Response<List<Alarms>>
+    @GET("support_alarm")
+    suspend fun getAllAlarms():Response<List<Alarms>>
+
+    @GET("support_alarm/{al_status}/{id_stations}")
+    suspend fun getStatusByStationSuspend(@Path("al_status") al_status:Int?,
+                           @Path("id_stations") id_stations:Int?):Response<List<Alarms>>
 
     @Headers("Accept: application/json")
     @POST("support_alarm")

@@ -27,10 +27,19 @@ class MyApiService {
         }
     }
 
-    suspend fun getStatusByStationSuspend(idStations :Int, alStatus: Int):List<Alarms>{
+    suspend fun getStatusByStationSuspend( idStations :Int, alStatus: Int, stationsSelected: StationsWithAlarmStatus):List<Alarms>{
+        Log.i("ApiService", "${alStatus} - ${idStations}")
         return withContext(Dispatchers.IO){
-            val response: Response<List<Alarms>> = retrofit.create(MyApi::class.java).getStatusByStationSuspend(idStations, alStatus)
+            val response: Response<List<Alarms>> = retrofit.create(MyApi::class.java).getStatusByStationSuspend(alStatus,idStations)
             response.body() ?: emptyList()
         }
+    }
+
+    suspend fun getAllAlarms():List<Alarms>{
+        return withContext(Dispatchers.IO){
+            val response: Response<List<Alarms>> = retrofit.create(MyApi::class.java).getAllAlarms()
+            response.body() ?: emptyList()
+        }
+
     }
 }
