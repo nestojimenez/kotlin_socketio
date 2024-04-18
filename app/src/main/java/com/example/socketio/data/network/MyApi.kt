@@ -2,6 +2,7 @@ package com.example.socketio.data.network
 
 import com.example.socketio.data.models.Alarms
 import com.example.socketio.data.models.Stations
+import com.example.socketio.data.models.Users
 import retrofit2.Call
 import retrofit2.Response
 import retrofit2.http.Body
@@ -38,4 +39,7 @@ interface MyApi  {
     @Headers("Accept: application/json")
     @POST("support_alarm")
     suspend fun createSupportAlarmSuspend(@Body alarmBody: Alarms): Response<Alarms>
+
+    @GET("support_alarm_users")
+    suspend fun getAllUsers():Response<List<Users>>
 }

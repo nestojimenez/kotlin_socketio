@@ -2,6 +2,7 @@ package com.example.socketio.data.models
 
 data class StationsWithAlarmStatus (
     val AlarmId: Int,
+    val employee: Int,
     val id_stations: Int,
     val al_status:Int,
     val createdAt: String,

@@ -20,7 +20,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="You are about to request"
+            android:text="@string/alarm_0_dialog_row1"
             android:textAlignment="center"
             android:textSize="18sp" />
 
@@ -28,7 +28,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
-            android:text="support for Station:"
+            android:text="@string/alarm_0_dialog_row2"
             android:textAlignment="center"
             android:textSize="18sp" />
 
@@ -37,7 +37,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
-            android:text="Harro 1"
+            android:text="@string/alarm_0_dialog_row3"
             android:textAlignment="center"
             android:textSize="24sp"
             android:textStyle="bold" />
@@ -46,11 +46,12 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:paddingTop="10dp"
-            android:text="To continue enter your employee number"
+            android:text="@string/alarm_0_dialog_employee_number"
             android:textAlignment="center"
             android:textSize="18sp" />
 
         <EditText
+            android:id="@+id/etEmployee"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:autofillHints="Enter Employee Number"
@@ -69,13 +70,13 @@
                 android:id="@+id/btnContinue"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Continue" />
+                android:text="@string/btn_continue" />
 
             <Button
                 android:id="@+id/btnCancel"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Cancel" />
+                android:text="@string/btn_cancel" />
 
         </LinearLayout>
 

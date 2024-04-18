@@ -9,5 +9,10 @@
     <color name="white">#FFFFFFFF</color>
 
     <color name="red">#FF6666</color>
+    <color name="yellow">#FEBE10</color>
+    <color name="purple">#800080</color>
+    <color name="pink">#FF00BF</color>
+
+
     <color name="app_background_blue">#2980B9</color>
 </resources>

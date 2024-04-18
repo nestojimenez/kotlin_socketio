@@ -1,3 +1,24 @@
 <resources>
     <string name="app_name">SocketIO</string>
+
+    <!--String for Alarm 0 Dialog Box-->
+    <string name="alarm_0_dialog_row1">You are about to request</string>
+    <string name="alarm_0_dialog_row2">Support for Station:</string>
+    <string name="alarm_0_dialog_row3">Stations 0</string>
+    <string name="alarm_0_dialog_employee_number">To continue enter your employee number</string>
+
+    <!--String for Alarm 0 Dialog Box-->
+    <string name="alarm_1_dialog_row1">How would you like to proceed?</string>
+    <string name="alarm_1_dialog_row2">Please Select and action for Station:</string>
+    <string name="alarm_1_dialog_row3">Stations 0</string>
+    <string name="alarm_1_dialog_employee_number">To continue enter your employee number</string>
+    <string name="alarm_1_dialog_action_1">Request Support to Manufacturing Engineering</string>
+    <string name="alarm_1_dialog_action_2">Request Support to Quality Engineering</string>
+    <string name="alarm_1_dialog_action_3">Request Support to All CFT</string>
+    <string name="alarm_1_dialog_action_4">Close Equipment Alarm</string>
+
+
+
+    <string name="btn_continue">Continue</string>
+    <string name="btn_cancel">Cancel</string>
 </resources>

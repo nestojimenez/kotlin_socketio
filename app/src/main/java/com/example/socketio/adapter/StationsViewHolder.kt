@@ -58,14 +58,34 @@ class StationsViewHolder(
         binding.tvUpdatedAtStation.text = stationModel.updated_at.substring(0, 10)
 
 
-       //Here we take the stations id and look into alarms to see the status of the alarm and
-        //make background card color match al_status
+       //Colors for the different Alarm Status
         val red = ContextCompat.getColor(binding.ivStation.context, com.example.socketio.R.color.red)
-        val currentStationAlarms =  alarmsList.find{ it.id_stations!! == stationModel.id}
-        if (currentStationAlarms != null) {
-            if(currentStationAlarms.al_status == 1){
-                binding.card.setCardBackgroundColor(red)
+        val yellow = ContextCompat.getColor(binding.ivStation.context, com.example.socketio.R.color.yellow)
+        val purple = ContextCompat.getColor(binding.ivStation.context, com.example.socketio.R.color.purple)
+        val pink = ContextCompat.getColor(binding.ivStation.context, com.example.socketio.R.color.pink)
+        val white = ContextCompat.getColor(binding.ivStation.context, com.example.socketio.R.color.white)
+
+        //val currentStationAlarms =  alarmsList.find{ it.id_stations == stationModel.id}
+        //Get a sublist of the alarms on database by station
+        val currentStationAllAlarms = alarmsList.filter { it.id_stations == stationModel.id }
+
+        Log.i("currentStationALlAlarms", currentStationAllAlarms.toString())
+        Log.i("currentStationALlAlarms", currentStationAllAlarms.isNotEmpty().toString())
+
+        //Look for a non Empty list of all alarms
+        if(currentStationAllAlarms.isNotEmpty()){
+            Log.i("currentStationAlarmsLast",
+                currentStationAllAlarms[currentStationAllAlarms.size - 1].toString())
+
+            when(currentStationAllAlarms[currentStationAllAlarms.size - 1].al_status){
+                1 -> binding.card.setCardBackgroundColor(red)
+                2 -> binding.card.setCardBackgroundColor(yellow)
+                3 -> binding.card.setCardBackgroundColor(purple)
+                4 -> binding.card.setCardBackgroundColor(pink)
+                5 -> binding.card.setCardBackgroundColor(white)
+                else -> binding.card.setCardBackgroundColor(white)
             }
+
         }
 
         Glide.with(binding.ivStation.context)
@@ -73,21 +93,29 @@ class StationsViewHolder(
 
 
         itemView.setOnClickListener {
+            Log.i("Clicked Alarm", AlarmsProvider.alarms.find { it.id_stations == stationModel.id }.toString())
+            val clickedAlarmStatus: Int = if(AlarmsProvider.alarms.find { it.id_stations == stationModel.id }!=null){
+                AlarmsProvider.alarms.find { it.id_stations == stationModel.id }!!.al_status!!
+            }else{
+                0
+            }
 
             val stationsSelected = StationsWithAlarmStatus(
-                1,
-                stationModel.id,
-                0,
-                "",
-                "",
-                stationModel.id,
-                stationModel.st_name,
-                stationModel.st_line,
-                stationModel.st_unhappy_oee,
-                stationModel.st_happy_oee,
-                stationModel.created_at.substring(0, 10),
-                stationModel.updated_at.substring(0, 10)
-            )
+                        1,
+                        0,
+                        stationModel.id,
+                        clickedAlarmStatus!!,
+                        "",
+                        "",
+                        stationModel.id,
+                        stationModel.st_name,
+                        stationModel.st_line,
+                        stationModel.st_unhappy_oee,
+                        stationModel.st_happy_oee,
+                        stationModel.created_at.substring(0, 10),
+                        stationModel.updated_at.substring(0, 10)
+                    )
+
 
             checkForStationsStatus(1, stationModel.id, stationsSelected)
 
@@ -109,38 +137,6 @@ class StationsViewHolder(
         Log.d("MyViewModel PrivateFun", "${stationsStatus} - ${stationId}")
         Log.i("stationSelected PrivateFun", stationsSelected.toString())
         alarmsViewModel.getStatusByStationSuspend(stationsStatus, stationId, stationsSelected)
-        //TO DO
-        //Make an observer of the isStationAlreadyAlarm to look if alarms is active or not
-        /*var status = 0
-        lateinit var alarma: Alarms
 
-        val api = Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            //.client(client)
-            .build()
-            .create(MyApi::class.java)
-
-
-
-        api.getStatusByStation(stationId, stationsStatus)
-            .enqueue(object : Callback<List<Alarms>> {
-                override fun onResponse(
-                    call: Call<List<Alarms>>,
-                    response: Response<List<Alarms>>
-                ) {
-                    Log.i("getStatusByStation", response.body()!![0].al_status.toString())
-                    if (response.isSuccessful) {
-                        status = response.body()!![0].al_status!!
-
-                    }
-                }
-
-                override fun onFailure(call: Call<List<Alarms>>, t: Throwable) {
-                    TODO("Not yet implemented")
-                }
-            })
-
-        return status*/
     }
 }

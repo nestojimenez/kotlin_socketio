@@ -7,6 +7,8 @@ import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsProvider
 import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.data.models.StationsWithAlarmStatusProvider
+import com.example.socketio.data.models.Users
+import com.example.socketio.data.models.UsersProvider
 import com.example.socketio.data.network.MyApiService
 
 class StationsRepository {
@@ -35,6 +37,12 @@ class StationsRepository {
     suspend fun getAllAlarms():List<Alarms>{
         val response:List<Alarms> = api.getAllAlarms()
         AlarmsProvider.alarms = response
+        return response
+    }
+
+    suspend fun getAllUsers():List<Users>{
+        val response:List<Users> = api.getAllUsers()
+        UsersProvider.user = response
         return response
     }
 }
