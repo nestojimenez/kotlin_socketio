@@ -21,6 +21,7 @@ import com.example.socketio.data.models.AlarmsProvider
 import com.example.socketio.data.models.Stations
 import com.example.socketio.databinding.ItemStationBinding
 import com.example.socketio.data.models.StationsWithAlarmStatus
+import com.example.socketio.data.models.StationsWithAlarmStatusProvider
 import com.example.socketio.ui.viewmodel.AlarmsViewModel
 import com.google.gson.GsonBuilder
 import okhttp3.internal.wait
@@ -34,7 +35,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 class StationsViewHolder(
     view: View,
     private val alarmsViewModel: AlarmsViewModel,
-    private val alarmsList: List<Alarms>
+    private val alarmsList: List<StationsWithAlarmStatus>
     /*private val lifecycle: LifecycleOwner*/
 ) : RecyclerView.ViewHolder(view) {
 
@@ -94,8 +95,8 @@ class StationsViewHolder(
 
         itemView.setOnClickListener {
             Log.i("Clicked Alarm", AlarmsProvider.alarms.find { it.id_stations == stationModel.id }.toString())
-            val clickedAlarmStatus: Int = if(AlarmsProvider.alarms.find { it.id_stations == stationModel.id }!=null){
-                AlarmsProvider.alarms.find { it.id_stations == stationModel.id }!!.al_status!!
+            val clickedAlarmStatus: Int = if(StationsWithAlarmStatusProvider.stationsWithAlarmStatus.find { it.id_stations == stationModel.id }!=null){
+                StationsWithAlarmStatusProvider.stationsWithAlarmStatus.find { it.id_stations == stationModel.id }!!.al_status!!
             }else{
                 0
             }
@@ -104,7 +105,7 @@ class StationsViewHolder(
                         1,
                         0,
                         stationModel.id,
-                        clickedAlarmStatus!!,
+                        clickedAlarmStatus,
                         "",
                         "",
                         stationModel.id,
@@ -116,12 +117,13 @@ class StationsViewHolder(
                         stationModel.updated_at.substring(0, 10)
                     )
 
-
-            checkForStationsStatus(1, stationModel.id, stationsSelected)
+            alarmsViewModel.stationsSelectedWithAlarmStatus.postValue(stationsSelected)
+            /*Log.i("AlarmStatus", clickedAlarmStatus.toString())
+            checkForStationsStatus(clickedAlarmStatus, stationModel.id, stationsSelected)
 
             val alStatus = alarmsViewModel.isStationAlreadyAlarm.value
             Log.i("AlarmStatus", alStatus.toString())
-            Log.i("stationSelected", stationsSelected.toString())
+            Log.i("stationSelected", stationsSelected.toString())*/
 
         }
 

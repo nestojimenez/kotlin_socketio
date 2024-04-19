@@ -31,6 +31,7 @@ class StationsRepository {
         //TODO
         Log.i("stationSelected Repository", "How many times this run")
         val response: List<Alarms> = api.getStatusByStationSuspend(alStatus, idStations, stationsSelected)
+        //StationsWithAlarmStatusProvider.stationsWithAlarmStatus = response
         return  response
     }
 
@@ -43,6 +44,12 @@ class StationsRepository {
     suspend fun getAllUsers():List<Users>{
         val response:List<Users> = api.getAllUsers()
         UsersProvider.user = response
+        return response
+    }
+
+    suspend fun getAllStationsWithAlarmsStatus():List<StationsWithAlarmStatus>{
+        val response:List<StationsWithAlarmStatus> = api.getAllStationsWithAlarmsStatus()
+        StationsWithAlarmStatusProvider.stationsWithAlarmStatus = response
         return response
     }
 }

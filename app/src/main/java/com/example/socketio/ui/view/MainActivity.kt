@@ -26,6 +26,7 @@ import com.example.socketio.databinding.ActivityMainBinding
 import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsProvider
 import com.example.socketio.data.models.StationsWithAlarmStatus
+import com.example.socketio.data.models.StationsWithAlarmStatusProvider
 import com.example.socketio.data.models.UsersProvider
 import com.example.socketio.data.network.MyApi
 import com.example.socketio.ui.viewmodel.AlarmsViewModel
@@ -58,10 +59,11 @@ class MainActivity : ComponentActivity() {
 
     //TODO Verify user exists - DONE
     //TODO Include employee number on OEE_Support_Alarms - DONE
-    //TODO Fix date sent to DB, date is correct but not the hour, do it on the backend - DONE
+    //TODO Fix date sent to DB, date is correct but not the hour,
+    // do it on the backend - DONE
     //TODO Search for data on DB only on current day
-    //TODO Update colors on Support App according to Alarm Status
-    //TODO remove card when Alarm is close
+    //TODO Update colors on Support App according to Alarm Status - DONE
+    //TODO remove card when Alarm is close - DONE
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -76,13 +78,20 @@ class MainActivity : ComponentActivity() {
 
         stationsViewModel.stationModel.observe(this) { currentStations ->
             binding.tvTitle.text = currentStations[0].st_name
-            getAllComments(currentStations)
+            getAllStations(currentStations)
         }
 
-        alarmsViewModel.alarmsModel.observe(this) { alarms ->
-            Log.i("AlarmsUpdated After Acknowledge", alarms.toString())
-            Log.i("AlarmsUpdated After Acknowledge", StationsProvider.stations.toString())
-            getAllComments(StationsProvider.stations)
+        /*alarmsViewModel.alarmsModel.observe(this) { alarms ->
+            Log.i("AlarmsUpdated After Acknowledge", AlarmsProvider.alarms.toString())
+            getAllStations(StationsProvider.stations)
+        }*/
+
+        alarmsViewModel.stationsWithAlarmStatusList.observe(this) { stationsWithAlarmStatusList ->
+            Log.i(
+                "AlarmsUpdated After Acknowledge y",
+                StationsWithAlarmStatusProvider.stationsWithAlarmStatus.toString()
+            )
+            getAllStations(StationsProvider.stations)
         }
 
         SocketHandler.setSocket()
@@ -104,18 +113,16 @@ class MainActivity : ComponentActivity() {
         }
 
         //getAllComments()
-        alarmsViewModel.isStationAlreadyAlarm.observe(this) { alarmStatus ->
-            Log.i("MyViewModel Adapter", alarmStatus.toString())
-            val stationsSelected = alarmsViewModel.stationsWithAlarmStatus.value
+        alarmsViewModel.stationsSelectedWithAlarmStatus.observe(this) { alarmStatus ->
+            Log.i("MyViewModel Adapter", AlarmsProvider.alarms.toString())
+            val stationsSelected = alarmsViewModel.stationsSelectedWithAlarmStatus.value
             if (alarmStatus != null) {
-                if (alarmStatus.al_status == 0) {
+                if (alarmStatus.al_status == 0 || alarmStatus.al_status == 5) {
                     Log.i("stationSelected ViewHolder", stationsSelected.toString())
-                    showAlertWindowStatus0(stationsSelected!!, alarmStatus.id_stations!!)
-                } else if (alarmStatus.al_status == 1) {
-                    Log.i("CurrentalarmStatus1", alarmStatus.al_status.toString())
-                    showAlertWindowStatus1(stationsSelected!!, alarmStatus.id_stations!!)
+                    showAlertWindowStatus0(stationsSelected!!, alarmStatus.id_stations)
                 } else {
-                    Toast.makeText(this, "Station Already Alarmed!!!", Toast.LENGTH_LONG).show()
+                    Log.i("CurrentalarmStatus1", alarmStatus.al_status.toString())
+                    showAlertWindowStatus1(stationsSelected!!)
                 }
             }
         }
@@ -124,14 +131,22 @@ class MainActivity : ComponentActivity() {
     private fun initStationRecyclerView() {
         val recyclerView = findViewById<RecyclerView>(R.id.rv_stations)
         recyclerView.layoutManager = LinearLayoutManager(this)
-        recyclerView.adapter = StationsAdapter(stationsList, alarmsViewModel, AlarmsProvider.alarms)
+        recyclerView.adapter = StationsAdapter(
+            stationsList,
+            alarmsViewModel,
+            StationsWithAlarmStatusProvider.stationsWithAlarmStatus
+        )
     }
 
-    private fun getAllComments(currentStations: List<Stations>) {
+    private fun getAllStations(currentStations: List<Stations>) {
         val manager = LinearLayoutManager(this@MainActivity)
         binding.rvStations.layoutManager = manager
         binding.rvStations.adapter =
-            StationsAdapter(currentStations, alarmsViewModel, AlarmsProvider.alarms)
+            StationsAdapter(
+                currentStations,
+                alarmsViewModel,
+                StationsWithAlarmStatusProvider.stationsWithAlarmStatus
+            )
     }
 
 
@@ -157,19 +172,21 @@ class MainActivity : ComponentActivity() {
 
         btnContinue.isEnabled = false
 
-        etEmployee.addTextChangedListener(object : TextWatcher{
+        etEmployee.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
 
             }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 Log.i("TextChanged", s.toString())
 
-                if(s!= null){
+                if (s != null) {
                     btnContinue.isEnabled = s.length == 7
-                }else{
+                } else {
                     btnContinue.isEnabled = false
                 }
             }
+
             override fun afterTextChanged(s: Editable?) {
 
             }
@@ -235,14 +252,48 @@ class MainActivity : ComponentActivity() {
                 //Add new alarms stations to alarmsViewModel.alarms
 
                 Log.i("alarmsModel", alarmsViewModel.alarmsModel.value.toString())
-                val alarmsUpdated = (alarmsViewModel.alarmsModel.value)?.toMutableList()
+                val alarmsToUpdated =
+                    (alarmsViewModel.stationsWithAlarmStatusList.value)?.toMutableList()
+                //alarmsViewModel.stationsSelectedWithAlarmStatus.postValue(stationSelectedNextStatus)
+                val newAlarmsToUpdate = AlarmsProvider.alarms.toMutableList()
 
-                if (alarmsUpdated != null) {
-                    alarmsUpdated.add(newAlarmToRecord)
-                    Log.i("alarmsModel", alarmsUpdated.toString())
-                    alarmsViewModel.alarmsModel.postValue(alarmsUpdated)
-                    AlarmsProvider.alarms = alarmsUpdated
+                if (alarmsToUpdated != null) {
+                    if (alarmsToUpdated.find { it.id_stations == stationSelectedNextStatus.id_stations } != null) {
+                        val index =
+                            alarmsToUpdated.indexOf(alarmsToUpdated.find { it.id_stations == stationSelectedNextStatus.id_stations })
+                        alarmsToUpdated[index] = stationSelectedNextStatus
+                        newAlarmsToUpdate[index] = newAlarmToRecord
+                    } else {
+                        alarmsToUpdated.add(stationSelectedNextStatus)
+                        newAlarmsToUpdate.add(newAlarmToRecord)
+                    }
+
+                    Log.i("alarmsModel1", alarmsToUpdated.toString())
+                    AlarmsProvider.alarms = (newAlarmsToUpdate)
+                    alarmsViewModel.stationsWithAlarmStatusList.postValue(alarmsToUpdated)
+                    StationsWithAlarmStatusProvider.stationsWithAlarmStatus = alarmsToUpdated
+                } else {
+                    AlarmsProvider.alarms = listOf(newAlarmToRecord)
+                    Log.i("alarmsModel3", alarmsToUpdated.toString())
+                    alarmsViewModel.stationsWithAlarmStatusList.postValue(
+                        listOf(
+                            stationSelectedNextStatus
+                        )
+                    )
+                    StationsWithAlarmStatusProvider.stationsWithAlarmStatus =
+                        listOf(stationSelectedNextStatus)
                 }
+
+                val manager = LinearLayoutManager(this@MainActivity)
+                binding.rvStations.layoutManager = manager
+                binding.rvStations.adapter =
+                    StationsAdapter(
+                        StationsProvider.stations,
+                        alarmsViewModel,
+                        StationsWithAlarmStatusProvider.stationsWithAlarmStatus
+                    )
+
+
                 val api = Retrofit.Builder()
                     .baseUrl(BASE_URL)
                     .addConverterFactory(GsonConverterFactory.create())
@@ -274,8 +325,7 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun showAlertWindowStatus1(
-        stationsSelected: StationsWithAlarmStatus,
-        idStations: Int
+        stationsSelected: StationsWithAlarmStatus
     ) {
 
         val dialog = Dialog(this)
@@ -315,19 +365,21 @@ class MainActivity : ComponentActivity() {
 
         btnContinue.isEnabled = false
 
-        etEmployee.addTextChangedListener(object : TextWatcher{
+        etEmployee.addTextChangedListener(object : TextWatcher {
             override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
 
             }
+
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 Log.i("TextChanged", s.toString())
 
-                if(s!= null){
+                if (s != null) {
                     btnContinue.isEnabled = s.length == 7
-                }else{
+                } else {
                     btnContinue.isEnabled = false
                 }
             }
+
             override fun afterTextChanged(s: Editable?) {
 
             }
@@ -397,15 +449,46 @@ class MainActivity : ComponentActivity() {
                 //Add new alarms stations to alarmsViewmodel.alarms
 
                 Log.i("alarmsModel", alarmsViewModel.alarmsModel.value.toString())
-                val alarmsUpdated = (alarmsViewModel.alarmsModel.value)?.toMutableList()
+                val alarmsToUpdated =
+                    (alarmsViewModel.stationsWithAlarmStatusList.value)?.toMutableList()
+                Log.i("alarmsModel2", stationSelectedNextStatus.toString())
 
-                if (alarmsUpdated != null) {
-                    alarmsUpdated.add(newAlarmToRecord)
-                    Log.i("alarmsModel", alarmsUpdated.toString())
-                    alarmsViewModel.alarmsModel.postValue(alarmsUpdated)
-                    AlarmsProvider.alarms = alarmsUpdated
+                val newAlarmsToUpdate = AlarmsProvider.alarms.toMutableList()
+
+                if (alarmsToUpdated != null) {
+                    if (alarmsToUpdated.find { it.id_stations == stationSelectedNextStatus.id_stations } != null) {
+                        val index =
+                            alarmsToUpdated.indexOf(alarmsToUpdated.find { it.id_stations == stationSelectedNextStatus.id_stations })
+                        alarmsToUpdated[index] = stationSelectedNextStatus
+                        newAlarmsToUpdate[index] = newAlarmToRecord
+                    } else {
+                        alarmsToUpdated.add(stationSelectedNextStatus)
+                        newAlarmsToUpdate.add(newAlarmToRecord)
+                    }
+
+                    Log.i("alarmsModel1", alarmsToUpdated.toString())
+                    AlarmsProvider.alarms = (newAlarmsToUpdate)
+                    alarmsViewModel.stationsWithAlarmStatusList.postValue(
+                        alarmsToUpdated
+                    )
+                    StationsWithAlarmStatusProvider.stationsWithAlarmStatus = alarmsToUpdated
+                } else {
+                    AlarmsProvider.alarms = newAlarmsToUpdate
+                    Log.i("alarmsModel3", alarmsToUpdated.toString())
+                    alarmsViewModel.stationsWithAlarmStatusList.postValue(
+                       listOf(stationSelectedNextStatus)
+                    )
+                    StationsWithAlarmStatusProvider.stationsWithAlarmStatus =
+                        listOf(stationSelectedNextStatus)
                 }
-
+                val manager = LinearLayoutManager(this@MainActivity)
+                binding.rvStations.layoutManager = manager
+                binding.rvStations.adapter =
+                    StationsAdapter(
+                        StationsProvider.stations,
+                        alarmsViewModel,
+                        StationsWithAlarmStatusProvider.stationsWithAlarmStatus
+                    )
 
                 val api = Retrofit.Builder()
                     .baseUrl(BASE_URL)
@@ -427,7 +510,7 @@ class MainActivity : ComponentActivity() {
                         Log.i("Retrofi_alarmx", t.message.toString())
                     }
                 })
-            }else {
+            } else {
                 Log.i("UserExist_No", "UserExist_No")
             }
 

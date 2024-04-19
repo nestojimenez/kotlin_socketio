@@ -5,29 +5,31 @@ import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.socketio.data.models.Alarms
-import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.domain.GetAllAlarmsUseCase
-import com.example.socketio.domain.GetAllStationsUseCase
+import com.example.socketio.domain.GetStationWithAlarmStatusListUseCase
 import com.example.socketio.domain.GetStatusByStationUseCase
-import com.example.socketio.domain.PostAlarmSupportCase
 import kotlinx.coroutines.launch
 
 class AlarmsViewModel : ViewModel() {
     val alarmsModel = MutableLiveData<List<Alarms>>()
     val isStationAlreadyAlarm = MutableLiveData<Alarms>()
-    val stationsWithAlarmStatus = MutableLiveData<StationsWithAlarmStatus>()
+    val stationsSelectedWithAlarmStatus = MutableLiveData<StationsWithAlarmStatus>()
+    val stationsWithAlarmStatusList = MutableLiveData<List<StationsWithAlarmStatus>>()
 
     var getAllAlarmsCase = GetAllAlarmsUseCase()
     var getStatusByStationsCase = GetStatusByStationUseCase()
+    var getStationsWithAlarmsStatusList = GetStationWithAlarmStatusListUseCase()
 
 
     fun onCreate(){
         viewModelScope.launch {
             Log.d("AllStations", "En rutina de onCreate")
             val result = getAllAlarmsCase()
+            val alarmedStations = getStationsWithAlarmsStatusList()
             Log.d("AllStations", result.toString())
             alarmsModel.postValue(result)
+            stationsWithAlarmStatusList.postValue(alarmedStations)
         }
     }
 
@@ -38,11 +40,11 @@ class AlarmsViewModel : ViewModel() {
             val result = getStatusByStationsCase(idStations, alStatus, stationsSelected)
             Log.i("stationSelected ViewModel", stationsSelected.toString())
             if(result.isNullOrEmpty()){
-                stationsWithAlarmStatus.postValue(stationsSelected)
+                stationsSelectedWithAlarmStatus.postValue(stationsSelected)
                 isStationAlreadyAlarm.postValue(Alarms(0,0, idStations, 0, "", ""))
 
             }else{
-                stationsWithAlarmStatus.postValue(stationsSelected)
+                stationsSelectedWithAlarmStatus.postValue(stationsSelected)
                 isStationAlreadyAlarm.postValue(result[0])
             }
 

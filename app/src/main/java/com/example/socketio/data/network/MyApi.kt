@@ -2,6 +2,7 @@ package com.example.socketio.data.network
 
 import com.example.socketio.data.models.Alarms
 import com.example.socketio.data.models.Stations
+import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.data.models.Users
 import retrofit2.Call
 import retrofit2.Response
@@ -42,4 +43,7 @@ interface MyApi  {
 
     @GET("support_alarm_users")
     suspend fun getAllUsers():Response<List<Users>>
+
+    @GET("support_alarm_last")
+    suspend fun getAllStationsWithAlarmsStatus(): Response<List<StationsWithAlarmStatus>>
 }

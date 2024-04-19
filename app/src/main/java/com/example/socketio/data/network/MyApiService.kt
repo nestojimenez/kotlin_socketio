@@ -39,6 +39,7 @@ class MyApiService {
     suspend fun getAllAlarms():List<Alarms>{
         return withContext(Dispatchers.IO){
             val response: Response<List<Alarms>> = retrofit.create(MyApi::class.java).getAllAlarms()
+            Log.i("ApiService", response.body().toString())
             response.body() ?: emptyList()
         }
 
@@ -50,5 +51,12 @@ class MyApiService {
             response.body() ?: emptyList()
         }
 
+    }
+
+    suspend fun getAllStationsWithAlarmsStatus():List<StationsWithAlarmStatus>{
+        return withContext(Dispatchers.IO){
+            val response: Response<List<StationsWithAlarmStatus>> = retrofit.create(MyApi::class.java).getAllStationsWithAlarmsStatus()
+            response.body() ?: emptyList()
+        }
     }
 }

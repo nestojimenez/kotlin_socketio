@@ -9,10 +9,11 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.socketio.R
 import com.example.socketio.data.models.Alarms
 import com.example.socketio.data.models.Stations
+import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.ui.viewmodel.AlarmsViewModel
 
 
-class StationsAdapter(private val stationsList:List<Stations>, private val alarmsViewModel:AlarmsViewModel, private val alarmsList:List<Alarms>) : RecyclerView.Adapter<StationsViewHolder>(){
+class StationsAdapter(private val stationsList:List<Stations>, private val alarmsViewModel:AlarmsViewModel, private val alarmsList:List<StationsWithAlarmStatus>) : RecyclerView.Adapter<StationsViewHolder>(){
 
 
 
