@@ -41,7 +41,7 @@ class AlarmsViewModel : ViewModel() {
             Log.i("stationSelected ViewModel", stationsSelected.toString())
             if(result.isNullOrEmpty()){
                 stationsSelectedWithAlarmStatus.postValue(stationsSelected)
-                isStationAlreadyAlarm.postValue(Alarms(0,0, idStations, 0, "", ""))
+                isStationAlreadyAlarm.postValue(Alarms(0,0, idStations, 0, "", "", ""))
 
             }else{
                 stationsSelectedWithAlarmStatus.postValue(stationsSelected)

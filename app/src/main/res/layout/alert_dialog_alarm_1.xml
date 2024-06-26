@@ -77,6 +77,11 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="10dp"
                 android:text="@string/alarm_1_dialog_action_4"/>
+            <RadioButton android:id="@+id/radio_action5"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:text="@string/alarm_1_dialog_action_5"/>
         </RadioGroup>
 
         <EditText

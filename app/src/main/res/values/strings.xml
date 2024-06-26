@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">SocketIO</string>
+    <string name="app_name">ProductionTeam</string>
 
     <!--String for Alarm 0 Dialog Box-->
     <string name="alarm_0_dialog_row1">You are about to request</string>
@@ -16,8 +16,9 @@
     <string name="alarm_1_dialog_action_2">Request Support to Quality Engineering</string>
     <string name="alarm_1_dialog_action_3">Request Support to All CFT</string>
     <string name="alarm_1_dialog_action_4">Close Equipment Alarm</string>
+    <string name="alarm_1_dialog_action_5">Acknowledge Alarm</string>
 
-
+    <string name="main_text">Please select station to  Request for Support</string>
 
     <string name="btn_continue">Continue</string>
     <string name="btn_cancel">Cancel</string>

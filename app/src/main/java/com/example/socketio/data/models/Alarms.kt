@@ -6,5 +6,6 @@ data class Alarms(
     val id_stations: Int?,
     val al_status: Int?,
     val created_at: String?,
-    val updated_at: String?
+    val updated_at: String?,
+    val station_module: String?
 )

@@ -1,6 +1,7 @@
 package com.example.socketio.data.network
 
 import com.example.socketio.data.models.Alarms
+import com.example.socketio.data.models.StationModules
 import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.data.models.Users
@@ -46,4 +47,8 @@ interface MyApi  {
 
     @GET("support_alarm_last")
     suspend fun getAllStationsWithAlarmsStatus(): Response<List<StationsWithAlarmStatus>>
+
+    //Get all stations modules by line
+    @GET("station_modules/line/{st_line}")
+    suspend fun getStationModulesByLine(@Path("st_line") st_line:String?): Response<List<StationModules>>
 }

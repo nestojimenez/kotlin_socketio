@@ -3,6 +3,8 @@ package com.example.socketio.data
 import android.util.Log
 import com.example.socketio.data.models.Alarms
 import com.example.socketio.data.models.AlarmsProvider
+import com.example.socketio.data.models.StationModules
+import com.example.socketio.data.models.StationModulesProvider
 import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsProvider
 import com.example.socketio.data.models.StationsWithAlarmStatus
@@ -52,4 +54,12 @@ class StationsRepository {
         StationsWithAlarmStatusProvider.stationsWithAlarmStatus = response
         return response
     }
+
+    suspend fun getStationModulesByLine(stLine:String):List<StationModules>{
+        val response:List<StationModules> = api.getStationModulesByLine(stLine)
+        StationModulesProvider.stationModules = response
+        return response
+    }
+
+
 }

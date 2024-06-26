@@ -3,6 +3,7 @@ package com.example.socketio.data.network
 import android.util.Log
 import com.example.socketio.core.RetrofitHelper
 import com.example.socketio.data.models.Alarms
+import com.example.socketio.data.models.StationModules
 import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.data.models.Users
@@ -24,7 +25,7 @@ class MyApiService {
     suspend fun postAlarmSupport(body : Alarms):Alarms{
         return withContext(Dispatchers.IO){
             val response: Response<Alarms> = retrofit.create(MyApi::class.java).createSupportAlarmSuspend(body)
-            response.body() ?: Alarms(0,1, 0, 0, "", "")
+            response.body() ?: Alarms(0,1, 0, 0, "", "", "")
         }
     }
 
@@ -56,6 +57,13 @@ class MyApiService {
     suspend fun getAllStationsWithAlarmsStatus():List<StationsWithAlarmStatus>{
         return withContext(Dispatchers.IO){
             val response: Response<List<StationsWithAlarmStatus>> = retrofit.create(MyApi::class.java).getAllStationsWithAlarmsStatus()
+            response.body() ?: emptyList()
+        }
+    }
+
+    suspend fun getStationModulesByLine(stLine:String):List<StationModules>{
+        return withContext(Dispatchers.IO){
+            val response: Response<List<StationModules>> = retrofit.create(MyApi::class.java).getStationModulesByLine(stLine)
             response.body() ?: emptyList()
         }
     }

@@ -7,29 +7,36 @@ import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
 import android.util.Log
+import android.view.View
 import android.view.Window
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.RadioButton
+import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.socketio.data.models.Alarms
 import com.example.socketio.R
 import com.example.socketio.SocketHandler
 import com.example.socketio.adapter.StationsAdapter
+import com.example.socketio.core.RetrofitHelper
+import com.example.socketio.data.models.Alarms
 import com.example.socketio.data.models.AlarmsProvider
-import com.example.socketio.databinding.ActivityMainBinding
+import com.example.socketio.data.models.StationModulesProvider
 import com.example.socketio.data.models.Stations
 import com.example.socketio.data.models.StationsProvider
 import com.example.socketio.data.models.StationsWithAlarmStatus
 import com.example.socketio.data.models.StationsWithAlarmStatusProvider
 import com.example.socketio.data.models.UsersProvider
 import com.example.socketio.data.network.MyApi
+import com.example.socketio.databinding.ActivityMainBinding
 import com.example.socketio.ui.viewmodel.AlarmsViewModel
+import com.example.socketio.ui.viewmodel.StationModulesViewModel
 import com.example.socketio.ui.viewmodel.StationsViewModel
 import com.example.socketio.ui.viewmodel.UsersViewModel
 import com.google.gson.GsonBuilder
@@ -39,6 +46,11 @@ import retrofit2.Callback
 import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.time.LocalDateTime
+import java.time.OffsetDateTime
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
@@ -49,11 +61,12 @@ class MainActivity : ComponentActivity() {
 
     var stationsList = listOf(Stations(1, "Prueba", "Cequr", "40%", "70%", "", ""))
 
-    private val BASE_URL = "http://10.105.168.231:8000"//"https://jsonplaceholder.typicode.com"
+    private val BASE_URL = "http://10.105.173.111:8000"//"https://jsonplaceholder.typicode.com"
     private val TAG: String = "CHECK_RESPONSE"
     private val stationsViewModel: StationsViewModel by viewModels()
     private val alarmsViewModel: AlarmsViewModel by viewModels()
     private val userViewModel: UsersViewModel by viewModels()
+    private val stationModulesViewModel:StationModulesViewModel by viewModels()
 
     lateinit var mSocket: Socket
 
@@ -64,6 +77,9 @@ class MainActivity : ComponentActivity() {
     //TODO Search for data on DB only on current day
     //TODO Update colors on Support App according to Alarm Status - DONE
     //TODO remove card when Alarm is close - DONE
+    //TODO Add Arrive acknowledge option - DONE
+    //TODO Add user name for alarms - DONE
+    //TODO Add station module to alarms
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -75,16 +91,18 @@ class MainActivity : ComponentActivity() {
         stationsViewModel.onCreate()
         alarmsViewModel.onCreate()
         userViewModel.onCreate()
+        stationModulesViewModel.onCreate()
 
         stationsViewModel.stationModel.observe(this) { currentStations ->
-            binding.tvTitle.text = currentStations[0].st_name
+            //binding.tvTitle.text = currentStations[0].st_name
             getAllStations(currentStations)
         }
 
-        /*alarmsViewModel.alarmsModel.observe(this) { alarms ->
-            Log.i("AlarmsUpdated After Acknowledge", AlarmsProvider.alarms.toString())
-            getAllStations(StationsProvider.stations)
-        }*/
+        stationModulesViewModel.stationModel.observe(this) { stationModels ->
+            Log.i("StationModules", stationModels.toString())
+            Log.i("StationModules", StationModulesProvider.stationModules.toString())
+
+        }
 
         alarmsViewModel.stationsWithAlarmStatusList.observe(this) { stationsWithAlarmStatusList ->
             Log.i(
@@ -168,6 +186,41 @@ class MainActivity : ComponentActivity() {
         val btnCancel = dialog.findViewById<Button>(R.id.btnCancel)
         val btnContinue = dialog.findViewById<Button>(R.id.btnContinue)
 
+        var stationModule: String = ""
+
+        val spModules = dialog.findViewById<Spinner>(R.id.spStation)
+        if (spModules != null) {
+            val adapter = ArrayAdapter(
+                this,
+                android.R.layout.simple_spinner_item, StationModulesProvider
+                    .stationModules.filter{it.stationId.toInt() == stationsSelected.id_stations}.map { it.module_name }
+            )
+            spModules.adapter = adapter
+
+            spModules.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+                override fun onItemSelected(
+                    parent: AdapterView<*>,
+                    view: View, position: Int, id: Long
+                ) {
+
+                    (parent.getChildAt(0) as TextView).setTextColor(Color.GRAY)
+                    Log.i(
+                        "ModuleSelected",
+                        StationModulesProvider.stationModules[position].toString()
+                    )
+                    stationModule = StationModulesProvider
+                        .stationModules
+                        .filter{it.stationId.toInt() == stationsSelected.id_stations}
+                        .map { it.module_name }[position]
+                    //Log.i("ModuleSelected", stationModule)
+                }
+
+                override fun onNothingSelected(parent: AdapterView<*>) {
+                    // write code to perform some action
+                }
+            }
+        }
+
         Log.i("stationSelected ViewHolder", stationsSelected.toString())
 
         btnContinue.isEnabled = false
@@ -179,9 +232,9 @@ class MainActivity : ComponentActivity() {
 
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 Log.i("TextChanged", s.toString())
-
-                if (s != null) {
-                    btnContinue.isEnabled = s.length == 7
+                Log.i("User Exist", UsersProvider.user.find { it.user_employee_no == s.toString().toInt() }.toString())
+                if (UsersProvider.user.find { it.user_employee_no == s.toString().toInt() } != null) {
+                    btnContinue.isEnabled = true
                 } else {
                     btnContinue.isEnabled = false
                 }
@@ -216,18 +269,39 @@ class MainActivity : ComponentActivity() {
                     it.user_employee_no == etEmployee.text.toString().toInt()
                 }!!.id
 
+                val employeeName = UsersProvider.user.find {
+                    it.user_employee_no == etEmployee.text.toString().toInt()
+                }!!.user_name
+
                 val gsonPretty = GsonBuilder().setPrettyPrinting().create()
                 //Here stations alarmed is send to socketio, revisar
 
                 //update al_status with next status to be share on socketio
                 Log.i("stationSelected ViewHolder", stationsSelected.toString())
+
+                // define a formatter for your desired output
+                //Creation time to be sent thru socketio
+                val formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSX",
+                    Locale.ENGLISH)
+
+
+                val dateTime = LocalDateTime.now()
+                val offsetDateTime: OffsetDateTime = LocalDateTime.parse(dateTime.toString())
+                    // and append the desired offset
+                    .atOffset(ZoneOffset.UTC)
+
+                Log.i("dateTime", dateTime.toString())
+                Log.i("dateTime", offsetDateTime.format(formatter))
+
                 val stationSelectedNextStatus = StationsWithAlarmStatus(
                     stationsSelected.AlarmId,
                     employeeId!!,
+                    employeeName!!,
                     stationsSelected.id_stations,
                     1,
-                    stationsSelected.createdAt,
-                    stationsSelected.updatedAt,
+                    offsetDateTime.format(formatter),
+                    offsetDateTime.format(formatter),
+                    stationModule,
                     stationsSelected.id,
                     stationsSelected.st_name,
                     stationsSelected.st_line,
@@ -246,7 +320,8 @@ class MainActivity : ComponentActivity() {
                     stationsSelected.id_stations,
                     1,
                     "2024-03-18T22:34:09.000Z",
-                    "2024-03-18T22:34:09.000Z"
+                    "2024-03-18T22:34:09.000Z",
+                    stationModule
                 )
                 //Modify al_status on alarmsViewModel.alarms to one as is been activated
                 //Add new alarms stations to alarmsViewModel.alarms
@@ -295,16 +370,16 @@ class MainActivity : ComponentActivity() {
 
 
                 val api = Retrofit.Builder()
-                    .baseUrl(BASE_URL)
+                    .baseUrl(RetrofitHelper.BASE_URL)
                     .addConverterFactory(GsonConverterFactory.create())
-                    //.client(client)
+                    //.client(client
                     .build()
                     .create(MyApi::class.java)
 
                 api.createSupportAlarm(newAlarmToRecord).enqueue(object : Callback<Alarms> {
                     override fun onResponse(call: Call<Alarms>, response: Response<Alarms>) {
                         if (response.isSuccessful) {
-                            Log.i("Retrofi_alarm", response.body().toString())
+                            Log.i("newAlarmToRecord", newAlarmToRecord.toString())
                         } else {
                             Log.i("Retrofi_alarmed", response.message())
                         }
@@ -316,6 +391,7 @@ class MainActivity : ComponentActivity() {
                 })
             } else {
                 Log.i("UserExist_No", "UserExist_No")
+                Toast.makeText(btnContinue.context, "User does not exist", Toast.LENGTH_LONG).show()
             }
 
 
@@ -349,18 +425,22 @@ class MainActivity : ComponentActivity() {
         val rdAction2 = dialog.findViewById<RadioButton>(R.id.radio_action2)
         val rdAction3 = dialog.findViewById<RadioButton>(R.id.radio_action3)
         val rdAction4 = dialog.findViewById<RadioButton>(R.id.radio_action4)
+        val rdAction5 = dialog.findViewById<RadioButton>(R.id.radio_action5)
 
         rdAction1.setOnCheckedChangeListener { buttonView, isChecked ->
-            optionSelected = 2
+            optionSelected = 2 //Maintenance Alarm
         }
         rdAction2.setOnCheckedChangeListener { buttonView, isChecked ->
-            optionSelected = 3
+            optionSelected = 3 //Engineering Alarm
         }
         rdAction3.setOnCheckedChangeListener { buttonView, isChecked ->
-            optionSelected = 4
+            optionSelected = 4 //Quality Alarm
         }
         rdAction4.setOnCheckedChangeListener { buttonView, isChecked ->
-            optionSelected = 5
+            optionSelected = 5 //CFT Alarm
+        }
+        rdAction5.setOnCheckedChangeListener { buttonView, isChecked ->
+            optionSelected = 6 //Acknowledge alarm
         }
 
         btnContinue.isEnabled = false
@@ -373,8 +453,8 @@ class MainActivity : ComponentActivity() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 Log.i("TextChanged", s.toString())
 
-                if (s != null) {
-                    btnContinue.isEnabled = s.length == 7
+                if (UsersProvider.user.find { it.user_employee_no == s.toString().toInt() } != null) {
+                    btnContinue.isEnabled = true
                 } else {
                     btnContinue.isEnabled = false
                 }
@@ -408,21 +488,36 @@ class MainActivity : ComponentActivity() {
                     it.user_employee_no == etEmployee.text.toString().toInt()
                 }!!.id
 
+                val employeeName = UsersProvider.user.find {
+                    it.user_employee_no == etEmployee.text.toString().toInt()
+                }!!.user_name
+
                 val gsonPretty = GsonBuilder().setPrettyPrinting().create()
                 //Here stations alarmed is send to socketio, revisar
 
                 //val mSocket = SocketHandler.getSocket()
                 //mSocket.connect()
 
+                val formatter = DateTimeFormatter.ofPattern("uuuu-MM-dd'T'HH:mm:ss.SSSX",
+                    Locale.ENGLISH)
+
+
+                val dateTime = LocalDateTime.now()
+                val offsetDateTime: OffsetDateTime = LocalDateTime.parse(dateTime.toString())
+                    // and append the desired offset
+                    .atOffset(ZoneOffset.UTC)
+
                 //update al_status with next status to be share on socketio
                 Log.i("stationSelected ViewHolder", stationsSelected.toString())
                 val stationSelectedNextStatus = StationsWithAlarmStatus(
                     stationsSelected.AlarmId,
                     employeeId!!,
+                    employeeName!!,
                     stationsSelected.id_stations,
                     optionSelected,
-                    stationsSelected.createdAt,
-                    stationsSelected.updatedAt,
+                    offsetDateTime.format(formatter),
+                    offsetDateTime.format(formatter),
+                    stationsSelected.station_module,
                     stationsSelected.id,
                     stationsSelected.st_name,
                     stationsSelected.st_line,
@@ -443,7 +538,8 @@ class MainActivity : ComponentActivity() {
                     stationsSelected.id_stations,
                     optionSelected,
                     "2024-03-18T22:34:09.000Z",
-                    "2024-03-18T22:34:09.000Z"
+                    "2024-03-18T22:34:09.000Z",
+                    stationsSelected.station_module
                 )
                 //Modify al_status on alarmsViewModel.alarms to one as is been activated
                 //Add new alarms stations to alarmsViewmodel.alarms
